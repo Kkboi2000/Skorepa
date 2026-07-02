@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Skore Party</title>
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- ======================= TOP BAR ======================= -->
+  <div class="topbar">
+    <div class="room-badge" id="roomBadge" hidden>
+      <span class="rb-label">ROOM</span><span class="rb-code" id="roomBadgeCode">00000</span>
+    </div>
+    <div class="title-wordmark">Skore Party</div>
+    <div class="me-badge" id="meBadge" hidden></div>
+  </div>
+
+  <!-- ======================= SCREEN: TITLE ======================= -->
+  <section class="screen" id="screen-title">
+    <div class="title-hero">
+      <div class="hero-dial" id="heroDial" aria-hidden="true"></div>
+      <h1>Skore <span>Party</span></h1>
+      <p class="tagline">One clue. One needle. How close can your friends get?</p>
+    </div>
+
+    <div class="card entry-card">
+      <label class="field-label" for="nameInput">Your name</label>
+      <input id="nameInput" class="text-input" type="text" maxlength="16" placeholder="e.g. Krit" autocomplete="off" />
+
+      <div class="entry-buttons">
+        <button class="btn btn-spin" id="newGameBtn"><span>🎉</span><span>New game</span></button>
+        <button class="btn btn-next" id="joinToggleBtn"><span>🔑</span><span>Join game</span></button>
+      </div>
+
+      <div class="join-row" id="joinRow" hidden>
+        <input id="codeInput" class="text-input code-input" type="text" inputmode="numeric" maxlength="5" placeholder="5-digit code" />
+        <button class="btn btn-reveal" id="joinBtn"><span>➜</span><span>Join room</span></button>
+      </div>
+
+      <p class="entry-error" id="entryError" hidden></p>
+    </div>
+
+    <div class="credit">★ Krit's vibe coding ★</div>
+  </section>
+
+  <!-- ======================= SCREEN: LOBBY ======================= -->
+  <section class="screen" id="screen-lobby" hidden>
+    <div class="card lobby-card">
+      <p class="lobby-caption">Share this code with your friends</p>
+      <div class="lobby-code" id="lobbyCode">00000</div>
+
+      <p class="field-label players-label">Players in room</p>
+      <div class="chip-row" id="lobbyPlayers"></div>
+
+      <div class="lobby-actions">
+        <button class="btn btn-spin" id="startBtn" hidden><span>🚀</span><span>Start game</span></button>
+        <p class="waiting-text" id="lobbyWaiting" hidden>
+          <span class="mini-spinner"></span> Waiting for the host to start…
+        </p>
+        <button class="btn btn-ghost" id="lobbyLeaveBtn"><span>↩</span><span>Leave room</span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= SCREEN: GAME ======================= -->
+  <section class="screen" id="screen-game" hidden>
+    <div class="stage">
+
+      <!-- DIAL -->
+      <div class="dial-wrap" id="dialMount">
+        <!-- SVG injected by dial.js -->
+        <div class="board-overlay" id="boardOverlay" hidden>
+          <div class="spinner"></div>
+          <p id="boardOverlayText">waiting… for host</p>
+        </div>
+      </div>
+
+      <!-- CLUE CARD -->
+      <div class="clue-card" id="clueCard">
+        <div class="clue-half left">
+          <span class="arrow">←</span>
+          <div class="word-stack" id="leftStack"></div>
+        </div>
+        <div class="clue-divider"></div>
+        <button class="shuffle-btn" id="shuffleBtn" title="New words" hidden>🔄</button>
+        <div class="clue-half right">
+          <span class="arrow">→</span>
+          <div class="word-stack" id="rightStack"></div>
+        </div>
+      </div>
+
+      <!-- HOST: PREP CONTROLS -->
+      <div class="panel" id="hostPrepPanel" hidden>
+        <div class="seg-row">
+          <div class="seg" id="modeSeg">
+            <button data-mode="suggested">Suggested</button>
+            <button data-mode="custom">Custom</button>
+          </div>
+          <div class="seg seg-lang" id="langSeg">
+            <button data-lang="en">EN</button>
+            <button data-lang="th">ไทย</button>
+            <button data-lang="ja">日本語</button>
+          </div>
+        </div>
+        <div class="controls">
+          <button class="btn btn-spin" id="spinBtn"><span>🎯</span><span>Spin target</span></button>
+          <button class="btn btn-reveal" id="deployBtn" disabled><span>📡</span><span>Deploy</span></button>
+        </div>
+        <p class="hint" id="hostHint">Pick the words, spin the target, give your one-word clue out loud, then deploy.</p>
+      </div>
+
+      <!-- HOST: AIMING (lock status + reveal) -->
+      <div class="panel" id="hostAimPanel" hidden>
+        <p class="field-label">Guesses</p>
+        <div class="lock-list" id="lockList"></div>
+        <div class="controls">
+          <button class="btn btn-reveal" id="revealBtn" disabled><span>👁️</span><span>Reveal</span></button>
+        </div>
+        <p class="hint" id="revealHint">Waiting for every guest to lock in…</p>
+      </div>
+
+      <!-- GUEST: AIMING -->
+      <div class="panel" id="guestAimPanel" hidden>
+        <div class="controls">
+          <button class="btn btn-spin" id="lockBtn"><span>🔒</span><span>Lock answer</span></button>
+        </div>
+        <p class="hint" id="guestAimHint">Drag the needle to where you think the target hides, then lock it in.</p>
+      </div>
+
+      <!-- REVEALED: SCORES + ROUND-END BUTTONS -->
+      <div class="panel" id="scorePanel" hidden>
+        <p class="field-label">Scores</p>
+        <table class="score-table" id="scoreTable">
+          <thead><tr><th>Player</th><th>This round</th><th>Total</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div class="controls" id="hostEndButtons" hidden>
+          <button class="btn btn-spin" id="continueBtn"><span>▶️</span><span>Continue</span></button>
+          <button class="btn btn-reveal" id="switchHostBtn"><span>🔁</span><span>Switch host</span></button>
+          <button class="btn btn-ghost" id="hostExitBtn"><span>↩</span><span>Exit</span></button>
+        </div>
+        <div class="controls" id="guestEndButtons" hidden>
+          <button class="btn btn-spin" id="guestContinueBtn"><span>▶️</span><span>Continue</span></button>
+          <button class="btn btn-ghost" id="guestExitBtn"><span>↩</span><span>Exit</span></button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================= MODAL: PICK NEXT HOST ======================= -->
+  <div class="overlay" id="pickHostOverlay">
+    <div class="modal">
+      <h2>Pass the dial to…</h2>
+      <div class="pick-list" id="pickHostList"></div>
+      <button class="btn btn-ghost" id="pickHostCancel"><span>✕</span><span>Cancel</span></button>
+    </div>
+  </div>
+
+  <!-- ======================= MODAL: HOST INVITATION ======================= -->
+  <div class="overlay" id="inviteOverlay">
+    <div class="modal">
+      <h2>🎙️ Your turn to host!</h2>
+      <p>The host wants to pass the dial to you. Take it?</p>
+      <div class="controls">
+        <button class="btn btn-spin" id="inviteAcceptBtn"><span>✅</span><span>Accept</span></button>
+        <button class="btn btn-ghost" id="inviteDeclineBtn"><span>❌</span><span>Decline</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= TOAST ======================= -->
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="words.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
