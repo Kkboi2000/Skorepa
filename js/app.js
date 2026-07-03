@@ -18,11 +18,16 @@ import {
   lockAnswer, leaveRoom
 } from './net.js';
 import { createDial } from './dial.js';
+import {
+  prefs, mainLang, setLangPref, setSoundPref, playSound,
+  LANGS, LANG_MODES
+} from './prefs.js';
 
 const $ = id => document.getElementById(id);
 const DECKS = window.WAVELENGTH_WORDS;
-const GHOST_COLORS = ['#d6322e', '#1c3a5e', '#6bbfa6', '#e8742f',
-  '#7b5cd6', '#c2306e', '#2e8bd6', '#5f8a2e'];
+// reveal palette: every needle is grey except your own, which stays needle-red
+const NEEDLE_RED = '#d6322e';
+const GHOST_GREY = '#98a1ab';
 
 /* ------------------------------------------------------------
    STATE
@@ -34,13 +39,13 @@ const S = {
   // host-only, local memory (deliberately never synced pre-reveal)
   localTarget: null, hasSpun: false,
 
-  // host word prefs
-  wordMode: 'suggested', deckLang: 'en', deckIndex: 0,
+  // host word prefs (language is per-device now — see prefs.js)
+  wordMode: 'suggested', deckIndex: 0,
   customLeft: '', customRight: '',
 
   // ui bookkeeping
   dial: null, dialRole: null,
-  structKey: '', roundKey: '',
+  structKey: '', roundKey: '', lastPhase: null, prefsRev: 0,
   guestHidScores: false,
   seenInvite: null, toldInviteSent: null
 };
@@ -72,17 +77,29 @@ function toast(msg, ms = 3200) {
 
 function openModal(id, open) { $(id).classList.toggle('open', open); }
 
-const deckPair = () => {
-  const deck = DECKS[S.deckLang] || DECKS.en;
-  return deck[((S.deckIndex % deck.length) + deck.length) % deck.length];
-};
+/* Decks are PARALLEL translations: index i is the same pair in every
+   language. The pair index is the identity that syncs between players;
+   which language(s) you see it in is your own device's business. */
+const deckLen = () => (DECKS[mainLang()] || DECKS.en).length;
+const normIndex = i => ((i % deckLen()) + deckLen()) % deckLen();
+const deckPair = () => (DECKS[mainLang()] || DECKS.en)[normIndex(S.deckIndex)];
 const shuffleDeck = () => {
-  const deck = DECKS[S.deckLang] || DECKS.en;
-  if (deck.length > 1) {
-    let n; do { n = Math.floor(Math.random() * deck.length); } while (n === S.deckIndex);
+  if (deckLen() > 1) {
+    let n; do { n = Math.floor(Math.random() * deckLen()); } while (n === S.deckIndex);
     S.deckIndex = n;
   }
 };
+/* Reverse lookup: recover the pair index from deployed words so every
+   client can render the SAME problem in its own languages. Custom
+   words return null and render as fixed text. */
+function findPairIndex(leftWord, rightWord) {
+  if (!leftWord || !rightWord) return null;
+  for (const lang of Object.keys(DECKS)) {
+    const i = DECKS[lang].findIndex(p => p.left === leftWord && p.right === rightWord);
+    if (i !== -1) return i;
+  }
+  return null;
+}
 
 /* ------------------------------------------------------------
    ROOM LIFECYCLE
@@ -111,7 +128,7 @@ function cleanup() {
   Object.assign(S, {
     myId: null, code: null, room: null, players: [],
     localTarget: null, hasSpun: false,
-    dial: null, dialRole: null, structKey: '', roundKey: '',
+    dial: null, dialRole: null, structKey: '', roundKey: '', lastPhase: null,
     guestHidScores: false, seenInvite: null, toldInviteSent: null
   });
   $('dialMount').querySelectorAll('svg').forEach(n => n.remove());
@@ -146,6 +163,12 @@ function render() {
 
   const isHost = room.host_id === S.myId;
   const guests = S.players.filter(p => p.id !== room.host_id);
+
+  // scores just went up on every screen — one fanfare each
+  if (room.phase === 'revealed' && S.lastPhase !== 'revealed' && S.lastPhase !== null) {
+    playSound('reveal');
+  }
+  S.lastPhase = room.phase;
 
   handleInvites(room, isHost);
 
@@ -189,7 +212,7 @@ function renderGame(room, me, isHost, guests) {
     S.dialRole = role;
     S.dial = createDial($('dialMount'), {
       needle: !isHost,
-      onNeedleSet: () => { /* position is read at lock time */ }
+      onNeedleSet: () => playSound('point')   // position is read at lock time
     });
     S.structKey = ''; // force a structural pass
   }
@@ -203,11 +226,12 @@ function renderGame(room, me, isHost, guests) {
     shuffleDeck();               // fresh suggested pair each round
     S.dial.setGhosts([]);
     S.dial.setTarget(0);
+    S.dial.setNeedleLabel('');
   }
   S.roundKey = roundKey;
 
   // structural pass: panels + clue card, only when the shape changes
-  const structKey = [role, room.phase, room.round, S.wordMode, S.deckLang].join('|');
+  const structKey = [role, room.phase, room.round, S.wordMode, S.prefsRev].join('|');
   if (S.structKey !== structKey) {
     S.structKey = structKey;
     renderStructure(room, isHost);
@@ -254,9 +278,6 @@ function renderStructure(room, isHost) {
   // segmented controls reflect host prefs
   document.querySelectorAll('#modeSeg button').forEach(b =>
     b.classList.toggle('active', b.dataset.mode === S.wordMode));
-  document.querySelectorAll('#langSeg button').forEach(b =>
-    b.classList.toggle('active', b.dataset.lang === S.deckLang));
-  $('langSeg').style.visibility = (S.wordMode === 'suggested') ? 'visible' : 'hidden';
 
   if (isHost && phase === 'prep') updateDeployEnabled();
 }
@@ -276,21 +297,47 @@ function renderClueCard(room, isHost) {
     return;
   }
 
-  let lw, rw;
+  /* The pair index — not the text — is the problem's identity.
+     Language prefs change how it's DISPLAYED on this device only;
+     the deployed problem itself never changes. */
+  let pairIndex, lw, rw;
   if (suggested) {
-    const pair = deckPair();
-    lw = pair.left; rw = pair.right;
+    pairIndex = normIndex(S.deckIndex);
   } else {
+    pairIndex = findPairIndex(room.left_word, room.right_word);
     lw = room.left_word || '· · ·';
     rw = room.right_word || '· · ·';
   }
-  left.appendChild(makeWordDiv(lw));
-  right.appendChild(makeWordDiv(rw));
+
+  if (pairIndex == null) {           // custom words: fixed text, main only
+    left.appendChild(makeWordDiv(lw));
+    right.appendChild(makeWordDiv(rw));
+    return;
+  }
+  fillWordStack(left, pairIndex, 'left');
+  fillWordStack(right, pairIndex, 'right');
 }
 
-function makeWordDiv(text) {
+/* Stack order: Sub ▲ (small) → Main (big) → Sub ▼ (small). */
+function fillWordStack(container, pairIndex, side) {
+  const wordIn = lang => (DECKS[lang] && DECKS[lang][pairIndex])
+    ? DECKS[lang][pairIndex][side] : null;
+  for (const l of LANGS) {
+    if (prefs.langs[l.key] === 'up') {
+      const w = wordIn(l.key); if (w) container.appendChild(makeWordDiv(w, 'w-sub'));
+    }
+  }
+  const mw = wordIn(mainLang()); if (mw) container.appendChild(makeWordDiv(mw));
+  for (const l of LANGS) {
+    if (prefs.langs[l.key] === 'down') {
+      const w = wordIn(l.key); if (w) container.appendChild(makeWordDiv(w, 'w-sub'));
+    }
+  }
+}
+
+function makeWordDiv(text, cls = 'w-main') {
   const d = document.createElement('div');
-  d.className = 'w-main';
+  d.className = cls;
   d.setAttribute('dir', 'auto');
   d.textContent = text;
   return d;
@@ -353,15 +400,18 @@ function renderLive(room, me, isHost, guests) {
   }
 
   if (phase === 'revealed') {
-    // everyone sees every guest's needle at the reveal moment
-    const withColor = guests.map((g, i) => ({ ...g, color: GHOST_COLORS[i % GHOST_COLORS.length] }));
+    // everyone sees every guest's needle at the reveal moment:
+    // grey + name for the others, needle-red + name for your own
+    const withColor = guests.map(g =>
+      ({ ...g, color: g.id === S.myId ? NEEDLE_RED : GHOST_GREY }));
     const ghosts = withColor
-      .filter(g => isHost || g.id !== S.myId)   // guests keep their own real needle
+      .filter(g => g.id !== S.myId)             // guests keep their own real needle
       .map(g => ({ angle: g.needle, name: g.name, color: g.color }));
     S.dial.setGhosts(ghosts);
     if (!isHost && me && me.needle != null) {
       S.dial.setNeedle(me.needle);
       S.dial.setNeedleEnabled(false);
+      S.dial.setNeedleLabel(me.name);           // your name rides your needle
     }
     renderScores(room, withColor);
     $('scorePanel').hidden = (!isHost && S.guestHidScores);
@@ -510,20 +560,15 @@ document.querySelectorAll('#modeSeg button').forEach(b =>
     S.structKey = '';           // force clue card rebuild
     render();
   }));
-document.querySelectorAll('#langSeg button').forEach(b =>
-  b.addEventListener('click', () => {
-    S.deckLang = b.dataset.lang;
-    shuffleDeck();
-    S.structKey = '';
-    render();
-  }));
 $('shuffleBtn').addEventListener('click', () => {
+  playSound('next');
   shuffleDeck();
   renderClueCard(S.room, true);
 });
 
 $('spinBtn').addEventListener('click', () => {
   if (!S.dial || S.dial.isSpinning()) return;
+  playSound('gear');
   $('spinBtn').disabled = true;
   $('deployBtn').disabled = true;
   const landing = (Math.random() * 2 - 1) * 90;
@@ -570,6 +615,7 @@ $('revealBtn').addEventListener('click', async () => {
 /* ----- guest aiming ----- */
 $('lockBtn').addEventListener('click', async () => {
   if (!S.dial) return;
+  playSound('lock');
   $('lockBtn').disabled = true;
   await lockAnswer(S.myId, S.dial.getNeedle());
 });
@@ -620,6 +666,64 @@ $('inviteDeclineBtn').addEventListener('click', async () => {
   openModal('inviteOverlay', false);
   await declineHost(S.code);
 });
+
+/* ------------------------------------------------------------
+   SETTINGS (⚙️ per-device: language display + sound)
+   Changing these NEVER touches room state — only how this
+   device renders the same shared problem.
+   ------------------------------------------------------------ */
+function renderSettings() {
+  // language matrix
+  const grid = $('langGrid');
+  grid.innerHTML = '';
+  for (const l of LANGS) {
+    const row = document.createElement('div');
+    row.className = 'lang-row';
+    const name = document.createElement('span');
+    name.className = 'lang-name';
+    name.textContent = l.label;
+    row.appendChild(name);
+    const opts = document.createElement('div');
+    opts.className = 'lang-opts';
+    for (const m of LANG_MODES) {
+      const b = document.createElement('button');
+      b.className = 'lang-opt' + (prefs.langs[l.key] === m.value ? ' active' : '');
+      b.textContent = m.label;
+      // the one Main can't be demoted directly — pick a new Main instead
+      b.disabled = prefs.langs[l.key] === 'main' && m.value !== 'main';
+      b.addEventListener('click', () => {
+        if (setLangPref(l.key, m.value)) onPrefsChanged();
+      });
+      opts.appendChild(b);
+    }
+    row.appendChild(opts);
+    grid.appendChild(row);
+  }
+  // sound toggle
+  document.querySelectorAll('#soundSeg button').forEach(b =>
+    b.classList.toggle('active', (b.dataset.sound === 'on') === prefs.sound));
+}
+
+function onPrefsChanged() {
+  S.prefsRev++;                 // invalidates the structural render key
+  renderSettings();
+  if (S.room) render();         // live re-render of the clue card
+}
+
+$('settingsBtn').addEventListener('click', () => {
+  renderSettings();
+  openModal('settingsOverlay', true);
+});
+$('settingsCloseBtn').addEventListener('click', () =>
+  openModal('settingsOverlay', false));
+$('settingsOverlay').addEventListener('click', e => {
+  if (e.target === $('settingsOverlay')) openModal('settingsOverlay', false);
+});
+document.querySelectorAll('#soundSeg button').forEach(b =>
+  b.addEventListener('click', () => {
+    setSoundPref(b.dataset.sound === 'on');   // plays 'ping' on off → on
+    renderSettings();
+  }));
 
 /* ------------------------------------------------------------
    MISC
