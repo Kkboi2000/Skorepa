@@ -57,6 +57,9 @@ export function createDial(mount, opts = {}) {
   needleGrp.appendChild(el('line', { class: 'needle-stick', x1: 200, y1: 228, x2: 200, y2: 92 }));
   needleGrp.appendChild(el('circle', { class: 'needle-hub-outer', cx: 200, cy: 228, r: 34 }));
   needleGrp.appendChild(el('circle', { class: 'needle-hub-inner', cx: 200, cy: 228, r: 20 }));
+  // owner's name above the needle (shown at reveal via setNeedleLabel)
+  const needleLabel = el('text', { class: 'ghost-label needle-label', x: 200, y: 82 });
+  needleGrp.appendChild(needleLabel);
   if (!needle) needleGrp.style.display = 'none';
 
   [defs, scallops, faceTop, faceBot, stars, wedges, nums, shield, baseBar, ghosts, needleGrp]
@@ -188,6 +191,7 @@ export function createDial(mount, opts = {}) {
     setCover(show) { shield.classList.toggle('shield-hidden', !show); },
     setNeedle(a) { state.needleAngle = clamp(a ?? 0, -PLAY_LIMIT, PLAY_LIMIT); applyNeedle(); },
     getNeedle() { return state.needleAngle; },
+    setNeedleLabel(name) { needleLabel.textContent = (name || '').slice(0, 8); },
     setNeedleEnabled(b) {
       state.needleEnabled = !!b;
       needleGrp.classList.toggle('disabled', !b);
