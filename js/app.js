@@ -231,6 +231,7 @@ function renderLobby(isHost) {
   }
   $('startBtn').hidden = !isHost;
   $('startBtn').disabled = S.players.length < 2;
+  $('resetScoreBtn').hidden = !isHost;   // host can wipe totals from the lobby
   $('lobbyWaiting').hidden = isHost;
 }
 
