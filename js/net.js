@@ -19,6 +19,11 @@ async function run(query) {
   if (error) throw error;
 }
 
+/* The active room channel, kept so setTopic can also BROADCAST the topic
+   live (belt-and-suspenders alongside the DB write, and the only transport
+   if the optional `topic` column hasn't been added yet). */
+let topicChannel = null;
+
 /* ---------------- title screen ---------------- */
 
 export async function createRoom(name) {
@@ -59,7 +64,7 @@ export async function fetchPlayer(playerId) {
    subscription is unfiltered and we simply refetch our room's
    roster on any change — cheap and always correct. */
 
-export function watchRoom(code, { onRoom, onPlayers }) {
+export function watchRoom(code, { onRoom, onPlayers, onTopic }) {
   const refetchPlayers = async () => {
     const { data } = await sb.from('players')
       .select().eq('room_code', code).order('joined_at');
@@ -78,11 +83,22 @@ export function watchRoom(code, { onRoom, onPlayers }) {
     .on('postgres_changes',
       { event: '*', schema: 'public', table: 'players' },
       refetchPlayers)
+    .on('broadcast', { event: 'topic' },
+      ({ payload }) => { if (onTopic) onTopic(payload ? payload.topic : null); })
     .subscribe();
 
+  topicChannel = ch;
   refetchRoom();
   refetchPlayers();
-  return () => sb.removeChannel(ch);
+  return () => { if (topicChannel === ch) topicChannel = null; sb.removeChannel(ch); };
+}
+
+/* Live topic mirror — instant, migration-independent. Guests fall back to
+   this when the `topic` column is absent. Fire-and-forget. */
+export function broadcastTopic(topic) {
+  if (!topicChannel) return;
+  try { topicChannel.send({ type: 'broadcast', event: 'topic', payload: { topic } }); }
+  catch { /* channel not ready — ignore */ }
 }
 
 /* ---------------- host actions ---------------- */
