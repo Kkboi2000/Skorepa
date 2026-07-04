@@ -8,11 +8,11 @@
    database change echoes back and re-renders every client.
 
    The one secret that never syncs: S.localTarget — the host's
-   spun target angle — which only reaches the server at reveal.
+   spun/dragged target angle — which only reaches the server at reveal.
    ============================================================ */
 import {
   createRoom, joinRoom, watchRoom, fetchPlayer,
-  startGame, deploy, reveal, scoreFor, continueRound,
+  startGame, deploy, setTopic, reveal, scoreFor, continueRound,
   backToLobby, deleteRoom,
   offerHost, declineHost, acceptHost,
   lockAnswer, leaveRoom
@@ -25,9 +25,20 @@ import {
 
 const $ = id => document.getElementById(id);
 const DECKS = window.WAVELENGTH_WORDS;
-// reveal palette: every needle is grey except your own, which stays needle-red
+
+// Every player owns a distinct needle hue. Colours are assigned by the
+// player's position in the (joined_at-ordered) roster, so every client
+// computes the SAME colour for the SAME player without any extra sync.
 const NEEDLE_RED = '#d6322e';
-const GHOST_GREY = '#98a1ab';
+const NEEDLE_COLORS = [
+  '#d6322e', '#2f7dd1', '#7a3fb0', '#e08a1e', '#159e7a',
+  '#c2306e', '#4a6f2b', '#0f7d8c', '#b5462b', '#5b52c9'
+];
+function guestColorMap(guests) {
+  const m = {};
+  guests.forEach((g, i) => { m[g.id] = NEEDLE_COLORS[i % NEEDLE_COLORS.length]; });
+  return m;
+}
 
 /* ------------------------------------------------------------
    STATE
@@ -42,6 +53,9 @@ const S = {
   // host word prefs (language is per-device now — see prefs.js)
   wordMode: 'suggested', deckIndex: 0,
   customLeft: '', customRight: '',
+
+  // host topic box (synced to guests via the rooms.topic column)
+  topicOn: false, topicDraft: '', topicMode: '',
 
   // ui bookkeeping
   dial: null, dialRole: null,
@@ -125,12 +139,15 @@ function enterRoom(code, playerId) {
 function cleanup() {
   if (S.unsub) { S.unsub(); S.unsub = null; }
   sessionStorage.removeItem('skore_session');
+  clearTimeout(topicTimer);
   Object.assign(S, {
     myId: null, code: null, room: null, players: [],
     localTarget: null, hasSpun: false,
+    topicOn: false, topicDraft: '', topicMode: '',
     dial: null, dialRole: null, structKey: '', roundKey: '', lastPhase: null,
     guestHidScores: false, seenInvite: null, toldInviteSent: null
   });
+  const tm = $('topicMount'); if (tm) tm.innerHTML = '';
   $('dialMount').querySelectorAll('svg').forEach(n => n.remove());
   showScreen('title');
 }
@@ -212,8 +229,15 @@ function renderGame(room, me, isHost, guests) {
     S.dialRole = role;
     S.dial = createDial($('dialMount'), {
       needle: !isHost,
-      onNeedleSet: () => playSound('point')   // position is read at lock time
+      onNeedleSet: () => playSound('point'),   // position is read at lock time
+      onTargetSet: (a) => {                     // host dragged the score-range
+        S.localTarget = a;
+        S.hasSpun = true;
+        playSound('point');
+        updateDeployEnabled();
+      }
     });
+    if (!isHost) S.dial.setNeedleColor(guestColorMap(guests)[S.myId] || NEEDLE_RED);
     S.structKey = ''; // force a structural pass
   }
 
@@ -223,6 +247,8 @@ function renderGame(room, me, isHost, guests) {
     S.hasSpun = false;
     S.localTarget = null;
     S.guestHidScores = false;
+    S.topicOn = false;           // each round starts with no topic set
+    S.topicDraft = '';
     shuffleDeck();               // fresh suggested pair each round
     S.dial.setGhosts([]);
     S.dial.setTarget(0);
@@ -239,6 +265,9 @@ function renderGame(room, me, isHost, guests) {
 
   // live pass: things that change with every player update
   renderLive(room, me, isHost, guests);
+
+  // topic box (below the board) — recomputed every render, cheap
+  renderTopic();
 }
 
 /* ---------- structural pass ---------- */
@@ -259,7 +288,9 @@ function renderStructure(room, isHost) {
   if (isHost) {
     S.dial.setCover(false);                          // host always sees the bands
     S.dial.setTarget(phase === 'revealed' ? room.target_angle : (S.localTarget ?? 0));
+    S.dial.setTargetDraggable(phase === 'prep');     // drag the range to place the target
   } else {
+    S.dial.setTargetDraggable(false);
     if (phase === 'revealed') {
       S.dial.setCover(false);
       S.dial.setTarget(room.target_angle ?? 0);
@@ -357,6 +388,124 @@ function makeWordInput(side) {
   return inp;
 }
 
+/* ------------------------------------------------------------
+   TOPIC BOX (below the board)
+   Host: add (+ dashed box), edit, remove (✕). Guests: read-only.
+   Synced through the rooms.topic column (see net.js setTopic).
+     null → box removed;  '' → present but empty;  text → shown.
+   ------------------------------------------------------------ */
+let topicTimer = null;
+let topicSyncWarned = false;
+
+function pushTopic(topic) {
+  if (!S.code) return Promise.resolve();
+  return setTopic(S.code, topic).catch(() => {
+    if (!topicSyncWarned) {
+      topicSyncWarned = true;
+      toast('To share the topic with guests, add a "topic" text column to your Supabase rooms table.', 5200);
+    }
+  });
+}
+function debouncePushTopic(v) {
+  clearTimeout(topicTimer);
+  topicTimer = setTimeout(() => pushTopic(v), 350);
+}
+function autoGrowTopic(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 130) + 'px';
+}
+
+function renderTopic() {
+  const room = S.room;
+  const mount = $('topicMount');
+  if (!room || !mount) return;
+  const isHost = room.host_id === S.myId;
+  const phase = room.phase;
+
+  let mode;
+  if (phase === 'lobby') mode = 'hidden';
+  else if (isHost) mode = S.topicOn ? 'host-edit' : 'host-add';
+  else mode = ((phase === 'aiming' || phase === 'revealed') && room.topic) ? 'guest-show' : 'hidden';
+
+  if (mode !== S.topicMode) {
+    S.topicMode = mode;
+    mount.innerHTML = '';
+
+    if (mode === 'host-add') {
+      const add = document.createElement('button');
+      add.type = 'button';
+      add.className = 'topic-add';
+      add.innerHTML = '<span class="plus">+</span><span>Add a topic to rate</span>';
+      add.addEventListener('click', () => {
+        S.topicOn = true;
+        S.topicDraft = '';
+        pushTopic('');
+        renderTopic();
+        const inp = $('topicInput');
+        if (inp) inp.focus();
+      });
+      mount.appendChild(add);
+
+    } else if (mode === 'host-edit') {
+      const box = document.createElement('div');
+      box.className = 'topic-box';
+      const label = document.createElement('div');
+      label.className = 'topic-label';
+      label.textContent = 'Topic to rate';
+      const inp = document.createElement('textarea');
+      inp.id = 'topicInput';
+      inp.className = 'topic-input';
+      inp.rows = 1;
+      inp.maxLength = 90;
+      inp.setAttribute('dir', 'auto');
+      inp.placeholder = 'e.g. Eating pizza with a fork';
+      inp.value = S.topicDraft;
+      inp.addEventListener('input', () => {
+        S.topicDraft = inp.value;
+        autoGrowTopic(inp);
+        debouncePushTopic(inp.value);
+      });
+      inp.addEventListener('blur', () => { clearTimeout(topicTimer); pushTopic(S.topicDraft); });
+      const rm = document.createElement('button');
+      rm.type = 'button';
+      rm.className = 'topic-remove';
+      rm.setAttribute('aria-label', 'Remove topic');
+      rm.textContent = '✕';
+      rm.addEventListener('click', () => {
+        S.topicOn = false;
+        S.topicDraft = '';
+        clearTimeout(topicTimer);
+        pushTopic(null);
+        renderTopic();
+      });
+      box.appendChild(label);
+      box.appendChild(inp);
+      box.appendChild(rm);
+      mount.appendChild(box);
+      autoGrowTopic(inp);
+
+    } else if (mode === 'guest-show') {
+      const box = document.createElement('div');
+      box.className = 'topic-box readonly';
+      const label = document.createElement('div');
+      label.className = 'topic-label';
+      label.textContent = 'Topic to rate';
+      const text = document.createElement('div');
+      text.className = 'topic-text';
+      text.id = 'topicText';
+      text.setAttribute('dir', 'auto');
+      box.appendChild(label);
+      box.appendChild(text);
+      mount.appendChild(box);
+    }
+  }
+
+  if (mode === 'guest-show') {
+    const t = $('topicText');
+    if (t) t.textContent = room.topic || '';
+  }
+}
+
 /* ---------- live pass ---------- */
 function renderLive(room, me, isHost, guests) {
   const phase = room.phase;
@@ -387,6 +536,7 @@ function renderLive(room, me, isHost, guests) {
   }
 
   if (!isHost && phase === 'aiming') {
+    S.dial.setNeedleColor(guestColorMap(guests)[S.myId] || NEEDLE_RED);
     const locked = !!(me && me.locked);
     S.dial.setNeedleEnabled(!locked);
     if (locked && me.needle != null) S.dial.setNeedle(me.needle);
@@ -400,17 +550,18 @@ function renderLive(room, me, isHost, guests) {
   }
 
   if (phase === 'revealed') {
-    // everyone sees every guest's needle at the reveal moment:
-    // grey + name for the others, needle-red + name for your own
-    const withColor = guests.map(g =>
-      ({ ...g, color: g.id === S.myId ? NEEDLE_RED : GHOST_GREY }));
+    // everyone sees every player's needle at the reveal moment,
+    // each in its owner's colour with a name tag.
+    const cmap = guestColorMap(guests);
+    const withColor = guests.map(g => ({ ...g, color: cmap[g.id] || NEEDLE_RED }));
     const ghosts = withColor
-      .filter(g => g.id !== S.myId)             // guests keep their own real needle
+      .filter(g => g.id !== S.myId)             // your own needle stays the main one
       .map(g => ({ angle: g.needle, name: g.name, color: g.color }));
     S.dial.setGhosts(ghosts);
     if (!isHost && me && me.needle != null) {
       S.dial.setNeedle(me.needle);
       S.dial.setNeedleEnabled(false);
+      S.dial.setNeedleColor(cmap[S.myId] || NEEDLE_RED);
       S.dial.setNeedleLabel(me.name);           // your name rides your needle
     }
     renderScores(room, withColor);
@@ -591,16 +742,18 @@ function updateDeployEnabled() {
   const { left, right } = currentWords();
   $('deployBtn').disabled = !(S.hasSpun && left && right);
   $('hostHint').textContent = !S.hasSpun
-    ? 'Pick the words, spin the target, give your one-word clue out loud, then deploy.'
+    ? 'Pick the words, then spin or drag the score-range to set the target. Show or say your clue, then deploy.'
     : (!left || !right)
       ? 'Type both ends of the spectrum, then deploy.'
-      : 'Target set! Say your clue, then deploy to the guests.';
+      : 'Target set! Add your topic or say your clue, then deploy to the guests.';
 }
 
 $('deployBtn').addEventListener('click', async () => {
   const { left, right } = currentWords();
   if (!left || !right || S.localTarget == null) return;
   $('deployBtn').disabled = true;
+  clearTimeout(topicTimer);
+  await pushTopic(S.topicOn ? S.topicDraft.trim() : null);   // publish final topic (or clear it) BEFORE phase flips
   await deploy(S.code, left, right, S.wordMode);
 });
 
