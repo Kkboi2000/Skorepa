@@ -12,7 +12,7 @@
   <!-- ======================= TOP BAR ======================= -->
   <div class="topbar">
     <div class="room-badge" id="roomBadge" hidden>
-      <span class="rb-label">ROOM</span><span class="rb-code" id="roomBadgeCode">00000</span>
+      <span class="rb-label" data-i18n="room_label">ROOM</span><span class="rb-code" id="roomBadgeCode">00000</span>
     </div>
     <div class="topbar-right">
       <div class="me-badge" id="meBadge" hidden></div>
@@ -25,21 +25,21 @@
     <div class="title-hero">
       <div class="hero-dial" id="heroDial" aria-hidden="true"></div>
       <h1>Skore <span>Party</span></h1>
-      <p class="tagline">One clue. One needle. How close can your friends get?</p>
+      <p class="tagline" data-i18n="tagline">One clue. One needle. How close can your friends get?</p>
     </div>
 
     <div class="card entry-card">
-      <label class="field-label" for="nameInput">Your name</label>
-      <input id="nameInput" class="text-input" type="text" maxlength="16" placeholder="e.g. Krit" autocomplete="off" />
+      <label class="field-label" for="nameInput" data-i18n="name_label">Your name</label>
+      <input id="nameInput" class="text-input" type="text" maxlength="16" placeholder="e.g. Krit" data-i18n-ph="name_ph" autocomplete="off" />
 
       <div class="entry-buttons">
-        <button class="btn btn-spin" id="newGameBtn"><span>🎉</span><span>New game</span></button>
-        <button class="btn btn-next" id="joinToggleBtn"><span>🔑</span><span>Join game</span></button>
+        <button class="btn btn-spin" id="newGameBtn"><span>🎉</span><span data-i18n="new_game">New game</span></button>
+        <button class="btn btn-next" id="joinToggleBtn"><span>🔑</span><span data-i18n="join_game">Join game</span></button>
       </div>
 
       <div class="join-row" id="joinRow" hidden>
-        <input id="codeInput" class="text-input code-input" type="text" inputmode="numeric" maxlength="5" placeholder="5-digit code" />
-        <button class="btn btn-reveal" id="joinBtn"><span>➜</span><span>Join room</span></button>
+        <input id="codeInput" class="text-input code-input" type="text" inputmode="numeric" maxlength="5" placeholder="5-digit code" data-i18n-ph="code_ph" />
+        <button class="btn btn-reveal" id="joinBtn"><span>➜</span><span data-i18n="join_room">Join room</span></button>
       </div>
 
       <p class="entry-error" id="entryError" hidden></p>
@@ -49,18 +49,18 @@
   <!-- ======================= SCREEN: LOBBY ======================= -->
   <section class="screen" id="screen-lobby" hidden>
     <div class="card lobby-card">
-      <p class="lobby-caption">Share this code with your friends</p>
+      <p class="lobby-caption" data-i18n="share_code">Share this code with your friends</p>
       <div class="lobby-code" id="lobbyCode">00000</div>
 
-      <p class="field-label players-label">Players in room</p>
+      <p class="field-label players-label" data-i18n="players_in_room">Players in room</p>
       <div class="chip-row" id="lobbyPlayers"></div>
 
       <div class="lobby-actions">
-        <button class="btn btn-spin" id="startBtn" hidden><span>🚀</span><span>Start game</span></button>
+        <button class="btn btn-spin" id="startBtn" hidden><span>🚀</span><span data-i18n="start_game">Start game</span></button>
         <p class="waiting-text" id="lobbyWaiting" hidden>
-          <span class="mini-spinner"></span> Waiting for the host to start…
+          <span class="mini-spinner"></span> <span data-i18n="waiting_host">Waiting for the host to start…</span>
         </p>
-        <button class="btn btn-ghost" id="lobbyLeaveBtn"><span>↩</span><span>Leave room</span></button>
+        <button class="btn btn-ghost" id="lobbyLeaveBtn"><span>↩</span><span data-i18n="leave_room">Leave room</span></button>
       </div>
     </div>
   </section>
@@ -74,7 +74,7 @@
         <!-- SVG injected by dial.js -->
         <div class="board-overlay" id="boardOverlay" hidden>
           <div class="spinner"></div>
-          <p id="boardOverlayText">waiting… for host</p>
+          <p id="boardOverlayText" data-i18n="overlay_waiting">waiting… for host</p>
         </div>
       </div>
 
@@ -99,23 +99,24 @@
       <div class="panel" id="hostPrepPanel" hidden>
         <div class="seg-row">
           <div class="seg" id="modeSeg">
-            <button data-mode="suggested">Suggested</button>
-            <button data-mode="custom">Custom</button>
+            <button data-mode="suggested" data-i18n="mode_suggested">Suggested</button>
+            <button data-mode="custom" data-i18n="mode_custom">Custom</button>
           </div>
         </div>
         <div class="controls">
-          <button class="btn btn-spin" id="spinBtn"><span>🎯</span><span>Spin target</span></button>
-          <button class="btn btn-reveal" id="deployBtn" disabled><span>📡</span><span>Deploy</span></button>
+          <button class="btn btn-spin" id="spinBtn"><span>🎯</span><span data-i18n="spin_target">Spin target</span></button>
+          <button class="btn btn-reveal" id="deployBtn" disabled><span>📡</span><span data-i18n="deploy">Deploy</span></button>
         </div>
-        <p class="hint" id="hostHint">Pick the words, then spin or drag the score-range to set the target. Show or say your clue, then deploy.</p>
+        <p class="hint" id="hostHint" data-i18n="hint_prep_start">Pick the words, then spin or drag the score-range to set the target. Show or say your clue, then deploy.</p>
+        <button class="btn btn-ghost btn-reset" id="resetScoreBtn"><span>🧹</span><span data-i18n="reset_scores">Reset scores</span></button>
       </div>
 
       <!-- HOST: AIMING (lock status + reveal) -->
       <div class="panel" id="hostAimPanel" hidden>
-        <p class="field-label">Guesses</p>
+        <p class="field-label" data-i18n="guesses">Guesses</p>
         <div class="lock-list" id="lockList"></div>
         <div class="controls">
-          <button class="btn btn-reveal" id="revealBtn" disabled><span>👁️</span><span>Reveal</span></button>
+          <button class="btn btn-reveal" id="revealBtn" disabled><span>👁️</span><span data-i18n="reveal">Reveal</span></button>
         </div>
         <p class="hint" id="revealHint">Waiting for every guest to lock in…</p>
       </div>
@@ -123,26 +124,26 @@
       <!-- GUEST: AIMING -->
       <div class="panel" id="guestAimPanel" hidden>
         <div class="controls">
-          <button class="btn btn-spin" id="lockBtn"><span>🔒</span><span>Lock answer</span></button>
+          <button class="btn btn-spin" id="lockBtn"><span>🔒</span><span data-i18n="lock_answer">Lock answer</span></button>
         </div>
-        <p class="hint" id="guestAimHint">Drag the needle to where you think the target hides, then lock it in.</p>
+        <p class="hint" id="guestAimHint" data-i18n="hint_guest_aim">Drag the needle to where you think the target hides, then lock it in.</p>
       </div>
 
       <!-- REVEALED: SCORES + ROUND-END BUTTONS -->
       <div class="panel" id="scorePanel" hidden>
-        <p class="field-label">Scores</p>
+        <p class="field-label" data-i18n="scores">Scores</p>
         <table class="score-table" id="scoreTable">
-          <thead><tr><th>Player</th><th>This round</th><th>Total</th></tr></thead>
+          <thead><tr><th data-i18n="th_player">Player</th><th data-i18n="th_round">This round</th><th data-i18n="th_total">Total</th></tr></thead>
           <tbody></tbody>
         </table>
         <div class="controls" id="hostEndButtons" hidden>
-          <button class="btn btn-spin" id="continueBtn"><span>▶️</span><span>Continue</span></button>
-          <button class="btn btn-reveal" id="switchHostBtn"><span>🔁</span><span>Switch host</span></button>
-          <button class="btn btn-ghost" id="hostExitBtn"><span>↩</span><span>Exit</span></button>
+          <button class="btn btn-spin" id="continueBtn"><span>▶️</span><span data-i18n="continue">Continue</span></button>
+          <button class="btn btn-reveal" id="switchHostBtn"><span>🔁</span><span data-i18n="switch_host">Switch host</span></button>
+          <button class="btn btn-ghost" id="hostExitBtn"><span>↩</span><span data-i18n="exit">Exit</span></button>
         </div>
         <div class="controls" id="guestEndButtons" hidden>
-          <button class="btn btn-spin" id="guestContinueBtn"><span>▶️</span><span>Continue</span></button>
-          <button class="btn btn-ghost" id="guestExitBtn"><span>↩</span><span>Exit</span></button>
+          <button class="btn btn-spin" id="guestContinueBtn"><span>▶️</span><span data-i18n="continue">Continue</span></button>
+          <button class="btn btn-ghost" id="guestExitBtn"><span>↩</span><span data-i18n="exit">Exit</span></button>
         </div>
       </div>
 
@@ -152,20 +153,32 @@
   <!-- ======================= MODAL: PICK NEXT HOST ======================= -->
   <div class="overlay" id="pickHostOverlay">
     <div class="modal">
-      <h2>Pass the dial to…</h2>
+      <h2 data-i18n="pick_host_title">Pass the dial to…</h2>
       <div class="pick-list" id="pickHostList"></div>
-      <button class="btn btn-ghost" id="pickHostCancel"><span>✕</span><span>Cancel</span></button>
+      <button class="btn btn-ghost" id="pickHostCancel"><span>✕</span><span data-i18n="cancel">Cancel</span></button>
     </div>
   </div>
 
   <!-- ======================= MODAL: HOST INVITATION ======================= -->
   <div class="overlay" id="inviteOverlay">
     <div class="modal">
-      <h2>🎙️ Your turn to host!</h2>
-      <p>The host wants to pass the dial to you. Take it?</p>
+      <h2 data-i18n="invite_title">🎙️ Your turn to host!</h2>
+      <p data-i18n="invite_body">The host wants to pass the dial to you. Take it?</p>
       <div class="controls">
-        <button class="btn btn-spin" id="inviteAcceptBtn"><span>✅</span><span>Accept</span></button>
-        <button class="btn btn-ghost" id="inviteDeclineBtn"><span>❌</span><span>Decline</span></button>
+        <button class="btn btn-spin" id="inviteAcceptBtn"><span>✅</span><span data-i18n="accept">Accept</span></button>
+        <button class="btn btn-ghost" id="inviteDeclineBtn"><span>❌</span><span data-i18n="decline">Decline</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= MODAL: RESET SCORES ======================= -->
+  <div class="overlay" id="resetScoreOverlay">
+    <div class="modal">
+      <h2 data-i18n="reset_title">Reset all scores?</h2>
+      <p data-i18n="reset_body">This will erase every player's total score and set it back to 0. This can't be undone.</p>
+      <div class="controls">
+        <button class="btn btn-spin" id="resetScoreYes"><span>✅</span><span data-i18n="reset_yes">Yes, reset</span></button>
+        <button class="btn btn-ghost" id="resetScoreNo"><span>✕</span><span data-i18n="reset_no">No</span></button>
       </div>
     </div>
   </div>
@@ -174,18 +187,18 @@
   <div class="overlay" id="settingsOverlay">
     <div class="modal settings-modal">
       <div class="settings-head">
-        <h2>Settings</h2>
+        <h2 data-i18n="settings">Settings</h2>
         <button class="settings-close" id="settingsCloseBtn" aria-label="Close">✕</button>
       </div>
       <div class="settings-body">
-        <p class="field-label">Language</p>
+        <p class="field-label" data-i18n="language">Language</p>
         <div class="lang-grid" id="langGrid"><!-- rows injected by app.js --></div>
-        <p class="settings-note">Pick one Main (big, centre). Sub ▲ shows small above, Sub ▼ small below. None hides it.</p>
+        <p class="settings-note" data-i18n="lang_note">Pick one Main (big, centre). Sub ▲ shows small above, Sub ▼ small below. None hides it.</p>
 
-        <p class="field-label">Sound</p>
+        <p class="field-label" data-i18n="sound">Sound</p>
         <div class="sound-seg" id="soundSeg">
-          <button data-sound="on">On</button>
-          <button data-sound="off">Off</button>
+          <button data-sound="on" data-i18n="on">On</button>
+          <button data-sound="off" data-i18n="off">Off</button>
         </div>
 
         <div class="credit settings-credit">★ Krit's vibe code ★</div>
