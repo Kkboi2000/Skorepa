@@ -59,11 +59,9 @@ export function createDial(mount, opts = {}) {
   const baseBar = el('rect', { x: -4, y: 226, width: 408, height: 26, fill: 'var(--navy)' });
   const ghosts = el('g');
   const needleGrp = el('g', { class: 'needle-grp' });
-  needleGrp.appendChild(el('line', { class: 'needle-stick', x1: 200, y1: 228, x2: 200, y2: 92 }));
-  needleGrp.appendChild(el('circle', { class: 'needle-hub-outer', cx: 200, cy: 228, r: 34 }));
-  needleGrp.appendChild(el('circle', { class: 'needle-hub-inner', cx: 200, cy: 228, r: 20 }));
-  // owner's name above the needle (shown at reveal via setNeedleLabel)
-  const needleLabel = el('text', { class: 'ghost-label needle-label', x: 200, y: 82 });
+  // self-coloured stick + name tag, no hub/tip (uniform with the reveal ghosts)
+  needleGrp.appendChild(el('line', { class: 'needle-stick', x1: 200, y1: 228, x2: 200, y2: 96 }));
+  const needleLabel = el('text', { class: 'ghost-label needle-label', x: 200, y: 86 });
   needleGrp.appendChild(needleLabel);
   if (!needle) needleGrp.style.display = 'none';
 
@@ -226,8 +224,6 @@ export function createDial(mount, opts = {}) {
     setNeedleColor(color) {
       const c = color || 'var(--red)';
       needleGrp.querySelector('.needle-stick').setAttribute('stroke', c);
-      needleGrp.querySelector('.needle-hub-outer').setAttribute('fill', c);
-      needleGrp.querySelector('.needle-hub-inner').setAttribute('fill', c);
       needleLabel.setAttribute('fill', c);
     },
     // host-only: drag the score-range itself to place the target
