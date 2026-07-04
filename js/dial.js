@@ -59,9 +59,11 @@ export function createDial(mount, opts = {}) {
   const baseBar = el('rect', { x: -4, y: 226, width: 408, height: 26, fill: 'var(--navy)' });
   const ghosts = el('g');
   const needleGrp = el('g', { class: 'needle-grp' });
-  // self-coloured stick + name tag, no hub/tip (uniform with the reveal ghosts)
-  needleGrp.appendChild(el('line', { class: 'needle-stick', x1: 200, y1: 228, x2: 200, y2: 96 }));
-  const needleLabel = el('text', { class: 'ghost-label needle-label', x: 200, y: 86 });
+  // self-coloured needle sitting on its half-circle "stand" (hub over the base bar)
+  needleGrp.appendChild(el('line', { class: 'needle-stick', x1: 200, y1: 228, x2: 200, y2: 92 }));
+  needleGrp.appendChild(el('circle', { class: 'needle-hub-outer', cx: 200, cy: 228, r: 34, fill: 'var(--red)' }));
+  needleGrp.appendChild(el('circle', { class: 'needle-hub-inner', cx: 200, cy: 228, r: 20 }));
+  const needleLabel = el('text', { class: 'ghost-label needle-label', x: 200, y: 82 });
   needleGrp.appendChild(needleLabel);
   if (!needle) needleGrp.style.display = 'none';
 
@@ -226,7 +228,9 @@ export function createDial(mount, opts = {}) {
       // inline style beats the .needle-stick / .needle-label CSS rules
       // (a presentation attribute would lose to the stylesheet and stay red)
       needleGrp.querySelector('.needle-stick').style.stroke = c;
+      needleGrp.querySelector('.needle-hub-outer').style.fill = c;   // the stand matches the needle
       needleLabel.style.fill = c;
+      // hub-inner keeps its fixed dark overlay (CSS) for depth
     },
     // host-only: drag the score-range itself to place the target
     setTargetDraggable(b) {
