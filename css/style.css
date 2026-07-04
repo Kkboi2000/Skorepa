@@ -162,8 +162,6 @@ body{
 .needle-grp.dragging{cursor:grabbing;transition:none;}
 .needle-grp.disabled{cursor:default;}
 .needle-stick{stroke:var(--red);stroke-width:7;stroke-linecap:round;}
-.needle-hub-outer{fill:var(--red);}
-.needle-hub-inner{fill:var(--red-dark);opacity:.55;}
 .ghost-stick{stroke-width:5;stroke-linecap:round;opacity:.9;}
 .ghost-label{font-size:11px;font-weight:800;text-anchor:middle;paint-order:stroke;stroke:rgba(255,255,255,.85);stroke-width:3px;}
 
