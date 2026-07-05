@@ -11,12 +11,14 @@
 
   <!-- ======================= TOP BAR ======================= -->
   <div class="topbar">
-    <div class="room-badge" id="roomBadge" hidden>
-      <span class="rb-label" data-i18n="room_label">ROOM</span><span class="rb-code" id="roomBadgeCode">00000</span>
+    <div class="topbar-left">
+      <button class="btn btn-ghost topbar-exit" id="exitBtn" hidden><span>↩</span><span data-i18n="exit">Exit</span></button>
+      <div class="room-badge" id="roomBadge" hidden>
+        <span class="rb-label" data-i18n="room_label">ROOM</span><span class="rb-code" id="roomBadgeCode">00000</span>
+      </div>
     </div>
     <div class="topbar-right">
       <div class="me-badge" id="meBadge" hidden></div>
-      <button class="gear-btn exit-btn" id="exitBtn" title="Exit" aria-label="Exit" hidden>🚪</button>
       <button class="gear-btn" id="settingsBtn" title="Settings" aria-label="Settings">⚙️</button>
     </div>
   </div>
@@ -61,6 +63,7 @@
         <p class="waiting-text" id="lobbyWaiting" hidden>
           <span class="mini-spinner"></span> <span data-i18n="waiting_host">Waiting for the host to start…</span>
         </p>
+        <button class="btn btn-reveal js-switch-host" id="lobbySwitchHostBtn" hidden><span>🔁</span><span data-i18n="switch_host">Switch host</span></button>
         <button class="btn btn-ghost btn-reset" id="resetScoreBtn" hidden><span>🧹</span><span data-i18n="reset_scores">Reset scores</span></button>
         <button class="btn btn-ghost" id="lobbyLeaveBtn"><span>↩</span><span data-i18n="leave_room">Leave room</span></button>
       </div>
@@ -71,13 +74,40 @@
   <section class="screen" id="screen-game" hidden>
     <div class="stage">
 
-      <!-- DIAL -->
-      <div class="dial-wrap" id="dialMount">
-        <!-- SVG injected by dial.js -->
-        <div class="board-overlay" id="boardOverlay" hidden>
-          <div class="spinner"></div>
-          <p id="boardOverlayText" data-i18n="overlay_waiting">waiting… for host</p>
+      <!-- DIAL + spin lever (lever sits on the left of the board) -->
+      <div class="board-wrap">
+        <div class="dial-wrap" id="dialMount">
+          <!-- SVG injected by dial.js -->
+          <div class="board-overlay" id="boardOverlay" hidden>
+            <div class="spinner"></div>
+            <p id="boardOverlayText" data-i18n="overlay_waiting">waiting… for host</p>
+          </div>
         </div>
+        <button class="spin-lever" id="spinLever" title="Spin" aria-label="Spin target" hidden>
+          <svg viewBox="0 0 64 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+              <linearGradient id="lever-chrome" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#e9edf0"/><stop offset=".35" stop-color="#aeb6bd"/>
+                <stop offset=".55" stop-color="#cfd6db"/><stop offset="1" stop-color="#7f878e"/>
+              </linearGradient>
+              <linearGradient id="lever-base" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#d7dde1"/><stop offset="1" stop-color="#8b939a"/>
+              </linearGradient>
+              <radialGradient id="lever-ball" cx=".38" cy=".30" r=".8">
+                <stop offset="0" stop-color="#ff9d8f"/><stop offset=".45" stop-color="#d6322e"/>
+                <stop offset="1" stop-color="#8f1a17"/>
+              </radialGradient>
+            </defs>
+            <ellipse cx="32" cy="113" rx="23" ry="5.5" fill="rgba(0,0,0,.28)"/>
+            <path d="M15 112 Q15 97 32 97 Q49 97 49 112 Z" fill="url(#lever-base)"/>
+            <ellipse cx="32" cy="99" rx="12" ry="5.5" fill="url(#lever-chrome)"/>
+            <g class="lever-arm">
+              <rect x="28.5" y="30" width="7" height="70" rx="3.5" fill="url(#lever-chrome)"/>
+              <circle cx="32" cy="26" r="17" fill="url(#lever-ball)"/>
+              <ellipse cx="26" cy="20" rx="5.5" ry="3.8" fill="rgba(255,255,255,.5)"/>
+            </g>
+          </svg>
+        </button>
       </div>
 
       <!-- TOPIC BOX (host adds/edits/removes; guests read-only) -->
@@ -106,34 +136,10 @@
           </div>
         </div>
         <div class="controls prep-controls">
-          <button class="spin-lever" id="spinLever" title="Spin" aria-label="Spin target">
-            <svg viewBox="0 0 64 120" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <defs>
-                <linearGradient id="lever-chrome" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0" stop-color="#e9edf0"/><stop offset=".35" stop-color="#aeb6bd"/>
-                  <stop offset=".55" stop-color="#cfd6db"/><stop offset="1" stop-color="#7f878e"/>
-                </linearGradient>
-                <linearGradient id="lever-base" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stop-color="#d7dde1"/><stop offset="1" stop-color="#8b939a"/>
-                </linearGradient>
-                <radialGradient id="lever-ball" cx=".38" cy=".30" r=".8">
-                  <stop offset="0" stop-color="#ff9d8f"/><stop offset=".45" stop-color="#d6322e"/>
-                  <stop offset="1" stop-color="#8f1a17"/>
-                </radialGradient>
-              </defs>
-              <ellipse cx="32" cy="113" rx="23" ry="5.5" fill="rgba(0,0,0,.28)"/>
-              <path d="M15 112 Q15 97 32 97 Q49 97 49 112 Z" fill="url(#lever-base)"/>
-              <ellipse cx="32" cy="99" rx="12" ry="5.5" fill="url(#lever-chrome)"/>
-              <g class="lever-arm">
-                <rect x="28.5" y="30" width="7" height="70" rx="3.5" fill="url(#lever-chrome)"/>
-                <circle cx="32" cy="26" r="17" fill="url(#lever-ball)"/>
-                <ellipse cx="26" cy="20" rx="5.5" ry="3.8" fill="rgba(255,255,255,.5)"/>
-              </g>
-            </svg>
-          </button>
           <button class="btn btn-reveal" id="deployBtn" disabled><span>📡</span><span data-i18n="deploy">Deploy</span></button>
         </div>
         <p class="hint" id="hostHint" data-i18n="hint_prep_start">Pick the words, then spin or drag the score-range to set the target. Show or say your clue, then deploy.</p>
+        <button class="btn btn-ghost btn-reset js-switch-host" id="prepSwitchHostBtn"><span>🔁</span><span data-i18n="switch_host">Switch host</span></button>
       </div>
 
       <!-- HOST: AIMING (lock status + reveal) -->
@@ -163,12 +169,10 @@
         </table>
         <div class="controls" id="hostEndButtons" hidden>
           <button class="btn btn-spin" id="continueBtn"><span>▶️</span><span data-i18n="continue">Continue</span></button>
-          <button class="btn btn-reveal" id="switchHostBtn"><span>🔁</span><span data-i18n="switch_host">Switch host</span></button>
-          <button class="btn btn-ghost" id="hostExitBtn"><span>↩</span><span data-i18n="exit">Exit</span></button>
+          <button class="btn btn-reveal js-switch-host" id="switchHostBtn"><span>🔁</span><span data-i18n="switch_host">Switch host</span></button>
         </div>
         <div class="controls" id="guestEndButtons" hidden>
           <button class="btn btn-spin" id="guestContinueBtn"><span>▶️</span><span data-i18n="continue">Continue</span></button>
-          <button class="btn btn-ghost" id="guestExitBtn"><span>↩</span><span data-i18n="exit">Exit</span></button>
         </div>
       </div>
 
