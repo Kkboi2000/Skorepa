@@ -233,6 +233,7 @@ function renderLobby(isHost) {
   $('startBtn').hidden = !isHost;
   $('startBtn').disabled = S.players.length < 2;
   $('resetScoreBtn').hidden = !isHost;   // host can wipe totals from the lobby
+  $('lobbySwitchHostBtn').hidden = !isHost || S.players.length < 2;
   $('lobbyWaiting').hidden = isHost;
 }
 
@@ -300,6 +301,8 @@ function renderStructure(room, isHost) {
 
   // board overlay: guests wait while the host prepares
   $('boardOverlay').hidden = !(!isHost && phase === 'prep');
+  // the spin lever only exists for the host during prep
+  $('spinLever').hidden = !(isHost && phase === 'prep');
 
   // dial cover & target visibility per role/phase
   if (isHost) {
@@ -720,7 +723,10 @@ async function leaveGame() {
   cleanup();
 }
 $('lobbyLeaveBtn').addEventListener('click', leaveGame);
-$('exitBtn').addEventListener('click', leaveGame);
+// Exit is a soft bail-out: it returns the whole room to the lobby (setup),
+// it never closes the room and never shows a warning. Only "Leave room" does.
+$('exitBtn').addEventListener('click', () =>
+  backToLobby(S.code).catch(() => toast(t('err_lobby'))));
 
 /* ----- host prep ----- */
 document.querySelectorAll('#modeSeg button').forEach(b =>
@@ -739,15 +745,13 @@ $('spinLever').addEventListener('click', () => {
   if (!S.dial || S.dial.isSpinning()) return;
   playSound('gear');
   const lever = $('spinLever');
-  lever.classList.add('pulled');
-  setTimeout(() => lever.classList.remove('pulled'), 340);
-  lever.classList.add('disabled');            // no double-pull mid-spin
+  lever.classList.add('down', 'disabled');     // swing down and hold through the spin
   $('deployBtn').disabled = true;
   const landing = (Math.random() * 2 - 1) * 90;
   S.dial.spinTo(landing, (a) => {
     S.localTarget = a;          // ← the secret, kept local until reveal
     S.hasSpun = true;
-    lever.classList.remove('disabled');
+    lever.classList.remove('down', 'disabled'); // swing back up only when spinning ends
     updateDeployEnabled();
   });
 });
@@ -799,7 +803,7 @@ $('continueBtn').addEventListener('click', () =>
   continueRound(S.code, S.room.round)
     .catch(() => toast(t('err_next'))));
 
-$('switchHostBtn').addEventListener('click', () => {
+function openSwitchHost() {
   const list = $('pickHostList');
   list.innerHTML = '';
   const guests = S.players.filter(p => p.id !== S.room.host_id);
@@ -813,27 +817,23 @@ $('switchHostBtn').addEventListener('click', () => {
     list.appendChild(b);
   }
   openModal('pickHostOverlay', true);
-});
+}
+// Switch host is available from the lobby, the prep screen, and the score screen
+document.querySelectorAll('.js-switch-host').forEach(b =>
+  b.addEventListener('click', openSwitchHost));
 $('pickHostCancel').addEventListener('click', () =>
   openModal('pickHostOverlay', false));
-
-$('hostExitBtn').addEventListener('click', () =>
-  backToLobby(S.code)
-    .catch(() => toast(t('err_lobby'))));
 
 $('guestContinueBtn').addEventListener('click', () => {
   S.guestHidScores = true;      // dismiss scores, wait for the host
   render();
 });
-$('guestExitBtn').addEventListener('click', async () => {
-  await leaveRoom(S.myId);
-  cleanup();
-});
 
 /* ----- host invitation ----- */
 $('inviteAcceptBtn').addEventListener('click', async () => {
   openModal('inviteOverlay', false);
-  await acceptHost(S.code, S.myId, S.room.host_id);
+  const nextPhase = S.room.phase === 'lobby' ? 'lobby' : 'prep';
+  await acceptHost(S.code, S.myId, S.room.host_id, nextPhase);
   toast(t('now_host'));
 });
 $('inviteDeclineBtn').addEventListener('click', async () => {
