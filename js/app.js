@@ -83,6 +83,7 @@ function showScreen(name) {
   const inRoom = name !== 'title';
   $('roomBadge').hidden = !inRoom;
   $('meBadge').hidden = !inRoom;
+  $('exitBtn').hidden = (name !== 'game');   // quick-exit on every game stage
   if (inRoom) {
     $('roomBadgeCode').textContent = S.code || '';
     $('meBadge').textContent = `👤 ${S.name}`;
@@ -708,16 +709,18 @@ $('startBtn').addEventListener('click', async () => {
   }
   // on success the realtime echo flips phase → render() re-enables UI
 });
-$('lobbyLeaveBtn').addEventListener('click', async () => {
+async function leaveGame() {
   const isHost = S.room && S.room.host_id === S.myId;
   if (isHost) {
-    if (!confirm(t('confirm_close_room'))) return;
+    if (!confirm(t('confirm_close_room'))) return;   // host leaving closes the room
     await deleteRoom(S.code);
   } else {
     await leaveRoom(S.myId);
   }
   cleanup();
-});
+}
+$('lobbyLeaveBtn').addEventListener('click', leaveGame);
+$('exitBtn').addEventListener('click', leaveGame);
 
 /* ----- host prep ----- */
 document.querySelectorAll('#modeSeg button').forEach(b =>
@@ -732,16 +735,19 @@ $('shuffleBtn').addEventListener('click', () => {
   renderClueCard(S.room, true);
 });
 
-$('spinBtn').addEventListener('click', () => {
+$('spinLever').addEventListener('click', () => {
   if (!S.dial || S.dial.isSpinning()) return;
   playSound('gear');
-  $('spinBtn').disabled = true;
+  const lever = $('spinLever');
+  lever.classList.add('pulled');
+  setTimeout(() => lever.classList.remove('pulled'), 340);
+  lever.classList.add('disabled');            // no double-pull mid-spin
   $('deployBtn').disabled = true;
   const landing = (Math.random() * 2 - 1) * 90;
   S.dial.spinTo(landing, (a) => {
     S.localTarget = a;          // ← the secret, kept local until reveal
     S.hasSpun = true;
-    $('spinBtn').disabled = false;
+    lever.classList.remove('disabled');
     updateDeployEnabled();
   });
 });
