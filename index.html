@@ -84,30 +84,28 @@
           </div>
         </div>
         <button class="spin-lever" id="spinLever" title="Spin" aria-label="Spin target" hidden>
-          <svg viewBox="0 0 96 150" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <svg viewBox="0 0 130 130" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <defs>
               <linearGradient id="lever-chrome" x1="0" y1="0" x2="1" y2="1">
                 <stop offset="0" stop-color="#eef2f5"/><stop offset=".4" stop-color="#aeb6bd"/>
                 <stop offset=".6" stop-color="#d3d9de"/><stop offset="1" stop-color="#7c848b"/>
-              </linearGradient>
-              <linearGradient id="lever-base" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stop-color="#d7dde1"/><stop offset="1" stop-color="#868e95"/>
               </linearGradient>
               <radialGradient id="lever-ball" cx=".36" cy=".30" r=".85">
                 <stop offset="0" stop-color="#ff9d8f"/><stop offset=".45" stop-color="#d6322e"/>
                 <stop offset="1" stop-color="#8f1a17"/>
               </radialGradient>
             </defs>
-            <!-- mounting plate bolts onto the board edge (right); axle + crank stick out to the left -->
-            <rect x="85" y="74" width="11" height="44" rx="3.5" fill="url(#lever-base)"/>
-            <rect x="55" y="90" width="34" height="13" rx="6.5" fill="url(#lever-chrome)"/>
-            <circle cx="56" cy="96" r="12.5" fill="url(#lever-base)"/>
-            <!-- arm: points UP at rest, swings down + outward (anti-clockwise) when pulled -->
+            <!-- wall-mounted bracket -->
+            <rect x="54" y="46" width="38" height="62" rx="9" fill="#9ad3c0" stroke="#5aa892" stroke-width="2"/>
+            <rect x="66" y="54" width="12" height="46" rx="6" fill="rgba(18,40,60,.55)"/>
+            <circle cx="60" cy="52" r="2.3" fill="rgba(18,40,60,.5)"/><circle cx="86" cy="52" r="2.3" fill="rgba(18,40,60,.5)"/>
+            <circle cx="60" cy="102" r="2.3" fill="rgba(18,40,60,.5)"/><circle cx="86" cy="102" r="2.3" fill="rgba(18,40,60,.5)"/>
+            <!-- crank: pivots mid-mount, arm UP at rest, big swing DOWN on pull -->
             <g class="lever-arm">
-              <rect x="51.5" y="28" width="9" height="72" rx="4.5" fill="url(#lever-chrome)"/>
-              <circle cx="56" cy="24" r="16" fill="url(#lever-ball)"/>
-              <ellipse cx="50" cy="18" rx="5.5" ry="3.6" fill="rgba(255,255,255,.5)"/>
-              <circle cx="56" cy="96" r="5.5" fill="url(#lever-chrome)"/>
+              <rect x="68.5" y="16" width="9" height="63" rx="4.5" fill="url(#lever-chrome)"/>
+              <circle cx="73" cy="13" r="15" fill="url(#lever-ball)"/>
+              <ellipse cx="67.5" cy="8" rx="5" ry="3.3" fill="rgba(255,255,255,.5)"/>
+              <circle cx="73" cy="77" r="6.5" fill="url(#lever-chrome)"/>
             </g>
           </svg>
         </button>
