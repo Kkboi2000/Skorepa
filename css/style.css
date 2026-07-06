@@ -428,12 +428,12 @@ body{
 /* ---------- spin lever (crank mounted on the board's left side) ---------- */
 .board-wrap{position:relative;width:min(92vw,560px);}
 .spin-lever{
-  position:absolute;left:-18%;top:85%;transform:translateY(-50%);
-  width:77px;height:120px;z-index:9;
+  position:absolute;left:-34%;top:85%;transform:translateY(-50%);
+  width:100px;height:155px;z-index:9;
   background:none;border:none;padding:0;margin:0;line-height:0;cursor:pointer;
   filter:drop-shadow(0 5px 9px rgba(0,0,0,.4));
 }
-.spin-lever svg{width:77px;height:120px;display:block;overflow:visible;}
+.spin-lever svg{width:100px;height:155px;display:block;overflow:visible;}
 .spin-lever .lever-arm{
   transform-box:view-box;transform-origin:56px 96px;
   transition:transform .5s cubic-bezier(.34,1.35,.6,1);
@@ -443,6 +443,6 @@ body{
 .spin-lever.down:hover .lever-arm{transform:rotate(-110deg);}          /* swing DOWN + outward, hold */
 .spin-lever.disabled{pointer-events:none;}
 @media (max-width:440px){
-  .spin-lever{width:60px;height:94px;left:-8%;}
-  .spin-lever svg{width:60px;height:94px;}
+  .spin-lever{width:80px;height:125px;left:-12%;}
+  .spin-lever svg{width:80px;height:125px;}
 }
