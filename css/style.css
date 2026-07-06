@@ -428,7 +428,7 @@ body{
 /* ---------- spin lever (crank mounted on the board's left side) ---------- */
 .board-wrap{position:relative;width:min(92vw,560px);}
 .spin-lever{
-  position:absolute;left:-17.5%;top:82%;transform:translateY(-50%);
+  position:absolute;left:-17.7%;top:82%;transform:translateY(-50%);
   width:100px;height:155px;z-index:9;
   background:none;border:none;padding:0;margin:0;line-height:0;cursor:pointer;
   filter:drop-shadow(0 5px 9px rgba(0,0,0,.4));
