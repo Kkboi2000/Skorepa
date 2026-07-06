@@ -425,24 +425,24 @@ body{
 /* ---------- prep controls ---------- */
 .prep-controls{align-items:center;gap:16px;}
 
-/* ---------- spin lever (mounted on the left of the board) ---------- */
+/* ---------- spin lever (crank mounted on the board's left side) ---------- */
 .board-wrap{position:relative;width:min(92vw,560px);}
 .spin-lever{
-  position:absolute;left:-4px;top:30%;transform:translateY(-50%);
-  width:52px;height:96px;z-index:9;
+  position:absolute;left:-2px;top:40%;transform:translateY(-50%);
+  width:64px;height:100px;z-index:9;
   background:none;border:none;padding:0;margin:0;line-height:0;cursor:pointer;
   filter:drop-shadow(0 5px 9px rgba(0,0,0,.4));
 }
-.spin-lever svg{width:52px;height:96px;display:block;overflow:visible;}
+.spin-lever svg{width:64px;height:100px;display:block;overflow:visible;}
 .spin-lever .lever-arm{
-  transform-box:view-box;transform-origin:32px 99px;
-  transition:transform .42s cubic-bezier(.34,1.4,.6,1);
+  transform-box:view-box;transform-origin:40px 96px;
+  transition:transform .5s cubic-bezier(.34,1.35,.6,1);
 }
-.spin-lever:hover .lever-arm{transform:rotate(7deg);}
+.spin-lever:hover .lever-arm{transform:rotate(-8deg);}                 /* hint the swing */
 .spin-lever.down .lever-arm,
-.spin-lever.down:hover .lever-arm{transform:rotate(74deg);}   /* swing down + hold through the spin */
+.spin-lever.down:hover .lever-arm{transform:rotate(-110deg);}          /* swing DOWN anti-clockwise, hold */
 .spin-lever.disabled{pointer-events:none;}
 @media (max-width:440px){
-  .spin-lever{width:44px;height:82px;left:-2px;}
-  .spin-lever svg{width:44px;height:82px;}
+  .spin-lever{width:50px;height:78px;left:0;}
+  .spin-lever svg{width:50px;height:78px;}
 }
